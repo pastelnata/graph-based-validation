@@ -54,5 +54,4 @@ code/
 ├── .gitignore          # Git ignore rules
 ├── requirements.txt    # Python dependencies
 ├── README.md           # Project documentation
-└── run.sh              # Script to run the app
 ```

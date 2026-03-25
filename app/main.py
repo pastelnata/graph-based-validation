@@ -2,7 +2,11 @@
 
 from fastapi import FastAPI
 
+from app.routers.graphs import router as graphs_router
+
 app = FastAPI()
+
+app.include_router(graphs_router)
 
 
 @app.get("/")
