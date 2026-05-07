@@ -1,3 +1,5 @@
 fastapi[standard]
 pytest
 pylint
+networkx[default]
+matplotlib
