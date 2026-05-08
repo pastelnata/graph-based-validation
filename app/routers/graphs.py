@@ -1,5 +1,7 @@
 """Routes for working with genome properties."""
 
+# pylint: disable=global-statement
+
 import logging
 import os
 from typing import Any
@@ -36,23 +38,25 @@ class GraphRequest(BaseModel):
 def get_ai_service():
     """Lazily initialize AI_SERVICE on first use."""
     global AI_SERVICE
-    
+
     if AI_SERVICE is None:
-        from app.services.rule_generation.ai_service import AIService
-        
+        from app.services.rule_generation.ai_service import (  # pylint: disable=import-outside-toplevel
+            AIService,
+        )
+
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError(
                 "GEMINI_API_KEY environment variable is not set. "
                 "Please set it before starting the application."
             )
-        
+
         try:
             AI_SERVICE = AIService(api_key)
             logger.info("AIService initialized successfully")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize AIService: {str(e)}") from e
-    
+
     return AI_SERVICE
 
 
@@ -83,10 +87,10 @@ async def build_graph(request: GraphRequest) -> dict[str, Any]:
     try:
         # Get AI service (initialized lazily)
         ai_service = get_ai_service()
-        
+
         # Extract genome properties from request
         genome_properties = request.genome_properties
-        
+
         # Step 1: Build prompt from property names
         property_names = [prop.name for prop in genome_properties]
         prompt = PROMPT_BUILDER.build_prompt(property_names)
