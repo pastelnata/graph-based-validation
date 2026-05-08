@@ -14,16 +14,20 @@ from app.services.rule_generation.rule_builder import (
 rule_1 = {
     "source": "field_a",
     "target": "field_b",
-    "constraint": "must_equal",
-    "condition": "field_a == 'specific_value'",
+    "rule_details": {
+        "constraint": "must_equal",
+        "condition": "field_a == 'specific_value'",
+    },
 }
 
 rule_2 = {
     "source": "field_x",
     "target": "field_y",
-    "constraint": "must_not_equal",
-    "condition": "field_x != field_y",
-    "message": "field_x and field_y cannot be the same",
+    "rule_details": {
+        "constraint": "must_not_equal",
+        "condition": "field_x != field_y",
+        "message": "field_x and field_y cannot be the same",
+    },
 }
 
 
@@ -34,7 +38,7 @@ def test_convert_to_rule_success():
     assert isinstance(rule, Rule)
     assert rule.source == "field_a"
     assert rule.target == "field_b"
-    assert rule.constraint == "must_equal"
+    assert rule.rule_details.constraint == "must_equal"
 
 
 def test_convert_to_rule_invalid_data():
