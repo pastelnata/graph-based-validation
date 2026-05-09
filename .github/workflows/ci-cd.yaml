@@ -32,6 +32,7 @@ jobs:
       - name: Run tests
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
         run: |
           # Start the API server in the background
           python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &

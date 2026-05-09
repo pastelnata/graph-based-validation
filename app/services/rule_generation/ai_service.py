@@ -33,6 +33,11 @@ class AIService:
             )
 
         api_model = os.getenv("GEMINI_MODEL")
+        if not api_model:
+            raise AIServiceError(
+                "GEMINI_MODEL environment variable is not set"
+            )
+    
         try:
             genai.configure(api_key=api_key)
             self.model = genai.GenerativeModel(api_model)
