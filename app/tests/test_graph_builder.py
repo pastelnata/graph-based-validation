@@ -1,6 +1,8 @@
 """Tests for the GraphBuilder service."""
+import pytest
+
 from app.schemas.rule import Rule
-from app.services.graph.graph_builder import GraphBuilder
+from app.services.graph.graph_builder import GraphBuilder, GraphSaveError
 
 
 class TestGraphBuilderBasicConstruction:
@@ -303,3 +305,79 @@ class TestGraphEdgeCases:
         # Note: networkX DiGraph doesn't support multiple edges, so this will be 1 edge
         assert len(list(graph.graph.edges())) == 1
         assert len(list(graph.graph.nodes())) == 2
+
+    def test_save_graph_writes_json_file(self, tmp_path):
+        """Test that graphs are saved as genome_type.json files."""
+        rule = Rule(
+            source="a",
+            target="b",
+            rule_details={"constraint": "b == 1"},
+        )
+
+        builder = GraphBuilder()
+        builder.GRAPH_OUTPUT_DIR = tmp_path
+
+        graph = builder.build_graph([rule], genome_type="genome_type_test")
+        builder.save_graph(graph)
+        expected_path = builder.GRAPH_OUTPUT_DIR / "genome_type_test.json"
+
+        try:
+            assert expected_path.exists()
+            contents = expected_path.read_text(encoding="utf-8")
+            assert '"genome_type"' in contents
+            assert '"graph"' in contents
+            assert '"cycles"' in contents
+        finally:
+            if expected_path.exists():
+                expected_path.unlink()
+        
+
+    def test_save_graph_wraps_errors(self, tmp_path, monkeypatch):
+        """Test that save failures raise GraphSaveError with the original error attached."""
+        rule = Rule(
+            source="a",
+            target="b",
+            rule_details={"constraint": "b == 1"},
+        )
+
+        builder = GraphBuilder()
+        builder.GRAPH_OUTPUT_DIR = tmp_path
+
+        graph = builder.build_graph([rule], genome_type="test_genome")
+
+        def raise_error(*args, **kwargs):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(
+            "app.services.graph.graph_builder.Path.write_text",
+            raise_error,
+        )
+
+        with pytest.raises(GraphSaveError) as exc_info:
+            builder.save_graph(graph)
+
+        error = exc_info.value
+        assert "Failed to save graph" in str(error)
+        assert isinstance(error.original_error, OSError)
+        assert str(error.original_error) == "disk full"
+
+    def test_load_graph_round_trip(self, tmp_path):
+        """Test that a saved graph can be loaded back as a Graph model."""
+        rule = Rule(
+            source="a",
+            target="b",
+            rule_details={"constraint": "b == 1"},
+        )
+
+        builder = GraphBuilder()
+        builder.GRAPH_OUTPUT_DIR = tmp_path
+
+        original_graph = builder.build_graph([rule], genome_type="test_genome")
+        builder.save_graph(original_graph)
+
+        loaded_graph = builder.load_graph("test_genome")
+
+        assert loaded_graph.genome_type == "test_genome"
+        assert set(loaded_graph.graph.nodes()) == {"a", "b"}
+        assert len(list(loaded_graph.graph.edges())) == 1
+        assert loaded_graph.cycles == []
