@@ -5,9 +5,9 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from app.routers.graphs import router as graphs_router
-
 load_dotenv()
+
+from app.routers.graphs import router as graphs_router #pylint: disable=wrong-import-position
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
