@@ -31,7 +31,7 @@ class InvalidRuleDataError(RuleBuilderError):
 
 class RuleBuilder:
     
-    def get_rules(self, ai_response: str) -> list[Rule]:
+    def parse_rules(self, ai_response: str) -> list[Rule]:
         try:
             parsed_data = json.loads(ai_response)
         except json.JSONDecodeError as e:
