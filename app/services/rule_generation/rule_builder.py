@@ -12,39 +12,26 @@ from app.schemas.rule import Rule
 logger = logging.getLogger(__name__)
 
 
-class RuleParsingError(Exception):
+class RuleBuilderError(Exception):
+    """Base exception for RuleBuilder errors."""
+    
+    def __init__(self, message: str, original_error: Exception | None = None):
+        super().__init__(message)
+        self.original_error = original_error
+class RuleParsingError(RuleBuilderError):
     """Raised when AI response cannot be parsed as JSON."""
-    
-    def __init__(self, message: str, original_error: Exception | None = None):
-        super().__init__(message)
-        self.original_error = original_error
 
 
-class RuleValidationError(Exception):
+class RuleValidationError(RuleBuilderError):
     """Raised when Pydantic validation fails."""
-    
-    def __init__(self, message: str, original_error: Exception | None = None):
-        super().__init__(message)
-        self.original_error = original_error
 
 
-class InvalidRuleDataError(Exception):
+class InvalidRuleDataError(RuleBuilderError):
     """Raised when rule data violates business logic constraints."""
-    
-    def __init__(self, message: str, original_error: Exception | None = None):
-        super().__init__(message)
-        self.original_error = original_error
-
 
 class RuleBuilder:
-    """
-    Service for parsing and building Rule objects from AI-generated JSON responses.
-    """
     
     def get_rules(self, ai_response: str) -> list[Rule]:
-        """
-        Parse an AI-generated JSON response into a list of Rule objects.
-        """
         try:
             parsed_data = json.loads(ai_response)
         except json.JSONDecodeError as e:
@@ -87,9 +74,6 @@ class RuleBuilder:
         return rules
     
     def convert_to_rule(self, data: dict[str, Any]) -> Rule:
-        """
-        Convert raw data to Rule object.
-        """
         try:
             rule = Rule(**data)
             return rule
