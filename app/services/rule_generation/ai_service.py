@@ -4,7 +4,9 @@ import json
 import logging
 import os
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +41,7 @@ class AIService:
             )
     
         try:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel(api_model)
+            self.client = genai.Client(api_key=api_key)
         except Exception as error:
             error_msg = (f"Failed to initialize Gemini API: {str(error)}")
             logger.error(error_msg)
@@ -51,12 +52,9 @@ class AIService:
         Send prompt to api get json response.
         """
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.2,
-                    max_output_tokens=2048,
-                ),
+            response = self.client.models.generate_content(
+                model=self.api_model,
+                contents=types.Part.from_text(prompt)
             )
 
             if not response.text:
