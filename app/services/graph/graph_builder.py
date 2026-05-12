@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from typing import Optional
 
 import networkx as nx
 
@@ -53,11 +54,13 @@ class GraphBuilder:
 
             cycles = self.detect_cycles(graph, rules)
 
-            return Graph(
+            graph = Graph(
                 genome_type=genome_type,
                 graph=graph,
                 cycles=cycles
             )
+            self.save_graph(graph)
+            return graph
         except Exception as error:
             error_msg = f"Failed to build graph: {str(error)}"
             logger.error(error_msg, exc_info=True)
@@ -114,22 +117,20 @@ class GraphBuilder:
             raise GraphSaveError(error_msg, original_error=error) from error
     
 
-    def load_graph(self, genome_type: str) -> Graph:
+    def load_graph(self, genome_type: str) -> Optional[Graph]:
+        input_path = self.GRAPH_OUTPUT_DIR / f"{genome_type}.json"
+
+        if not input_path.exists():
+            logger.warning("Graph file not found for genome_type=%s", genome_type)
+            return None
+
         try:
-            input_path = self.GRAPH_OUTPUT_DIR / f"{genome_type}.json"
-
-            if not input_path.exists():
-                logger.warning("Graph file not found for genome_type=%s", genome_type)
-                raise FileNotFoundError(f"No graph found for genome type: {genome_type}")
-
             graph_data = json.loads(input_path.read_text(encoding="utf-8"))
 
             graph_data["graph"] = nx.node_link_graph(graph_data["graph"])
             loaded_graph = Graph.model_validate(graph_data)
 
             return loaded_graph
-        except FileNotFoundError as error:
-            raise GraphLoadError(str(error), original_error=error) from error
         except Exception as error:
             error_msg = f"Failed to load graph for genome_type={genome_type}: {str(error)}"
             logger.error(error_msg, exc_info=True)

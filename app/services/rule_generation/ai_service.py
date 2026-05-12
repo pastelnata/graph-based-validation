@@ -34,8 +34,8 @@ class AIService:
                 "Invalid API key provided to AIService"
             )
 
-        api_model = os.getenv("GEMINI_MODEL")
-        if not api_model:
+        self.api_model = os.getenv("GEMINI_MODEL")
+        if not self.api_model:
             raise AIServiceError(
                 "GEMINI_MODEL environment variable is not set"
             )

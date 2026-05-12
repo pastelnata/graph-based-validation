@@ -7,14 +7,14 @@ from fastapi import FastAPI
 
 load_dotenv()
 
-from app.routers.graphs import router as graphs_router #pylint: disable=wrong-import-position
+from app.routers.cross_field_validation import router as cross_field_router #pylint: disable=wrong-import-position
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-app.include_router(graphs_router)
+app.include_router(cross_field_router)
 
 
 @app.get("/")

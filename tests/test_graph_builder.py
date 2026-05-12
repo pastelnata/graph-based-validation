@@ -1,8 +1,18 @@
 """Tests for the GraphBuilder service."""
 import pytest
+from pathlib import Path
 
 from app.schemas.rule import Rule
 from app.services.graph.graph_builder import GraphBuilder, GraphSaveError
+
+
+@pytest.fixture(autouse=True)
+def cleanup_test_genome_json():
+    """Cleanup test_genome.json after tests to prevent file accumulation."""
+    yield
+    test_file = Path("app/resources/graphs/test_genome.json")
+    if test_file.exists():
+        test_file.unlink()
 
 
 class TestGraphBuilderBasicConstruction:

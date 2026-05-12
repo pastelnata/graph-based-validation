@@ -18,6 +18,7 @@ class RuleBuilderError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(message)
         self.original_error = original_error
+        
 class RuleParsingError(RuleBuilderError):
     """Raised when AI response cannot be parsed as JSON."""
 
@@ -31,7 +32,7 @@ class InvalidRuleDataError(RuleBuilderError):
 
 class RuleBuilder:
     
-    def get_rules(self, ai_response: str) -> list[Rule]:
+    def parse_rules(self, ai_response: str) -> list[Rule]:
         try:
             parsed_data = json.loads(ai_response)
         except json.JSONDecodeError as e:

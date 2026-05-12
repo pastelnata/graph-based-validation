@@ -62,7 +62,7 @@ def test_convert_to_rule_non_mapping_input():
     assert isinstance(excinfo.value.original_error, TypeError)
 
 
-def test_get_rules_success():
+def test_parse_rules_success():
     builder = RuleBuilder()
 
     ai_response = json.dumps(
@@ -71,46 +71,46 @@ def test_get_rules_success():
             rule_2,
         ]
     )
-    rules = builder.get_rules(ai_response)
+    rules = builder.parse_rules(ai_response)
 
     assert len(rules) == 2
     assert all(isinstance(r, Rule) for r in rules)
     assert [r.source for r in rules] == ["field_a", "field_x"]
 
 
-def test_get_rules_invalid_json():
+def test_parse_rules_invalid_json():
     builder = RuleBuilder()
 
     with pytest.raises(RuleParsingError) as excinfo:
-        builder.get_rules("{not valid json")
+        builder.parse_rules("{not valid json")
 
     assert "Invalid JSON" in str(excinfo.value)
     assert excinfo.value.original_error is not None
 
 
-def test_get_rules_json_but_not_list():
+def test_parse_rules_json_but_not_list():
     builder = RuleBuilder()
 
     ai_response = json.dumps({"rules": [rule_1]})
 
     with pytest.raises(RuleParsingError) as excinfo:
-        builder.get_rules(ai_response)
+        builder.parse_rules(ai_response)
 
     assert "expected a list" in str(excinfo.value)
 
 
-def test_get_rules_list_with_non_dict_item():
+def test_parse_rules_list_with_non_dict_item():
     builder = RuleBuilder()
 
     ai_response = json.dumps([rule_1, "not an object"])
 
     with pytest.raises(RuleParsingError) as excinfo:
-        builder.get_rules(ai_response)
+        builder.parse_rules(ai_response)
 
     assert "expected an object" in str(excinfo.value)
 
 
-def test_get_rules_wraps_rule_validation_error():
+def test_parse_rules_wraps_rule_validation_error():
     builder = RuleBuilder()
 
     ai_response = json.dumps(
@@ -121,13 +121,13 @@ def test_get_rules_wraps_rule_validation_error():
     )
 
     with pytest.raises(RuleValidationError) as excinfo:
-        builder.get_rules(ai_response)
+        builder.parse_rules(ai_response)
 
     assert "Failed to parse rule" in str(excinfo.value)
     assert isinstance(excinfo.value.original_error, RuleValidationError)
 
 
-def test_get_rules_wraps_invalid_rule_data_error(monkeypatch):
+def test_parse_rules_wraps_invalid_rule_data_error(monkeypatch):
     builder = RuleBuilder()
 
     def _raise_business_error(_data):
@@ -136,7 +136,7 @@ def test_get_rules_wraps_invalid_rule_data_error(monkeypatch):
     monkeypatch.setattr(builder, "convert_to_rule", _raise_business_error)
 
     with pytest.raises(RuleValidationError) as excinfo:
-        builder.get_rules(json.dumps([rule_1]))
+        builder.parse_rules(json.dumps([rule_1]))
 
     assert "Failed to parse rule" in str(excinfo.value)
     assert isinstance(excinfo.value.original_error, InvalidRuleDataError)
