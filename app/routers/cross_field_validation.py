@@ -13,6 +13,7 @@ from app.services.rule_generation.ai_service import AIService, AIServiceError
 from app.services.rule_generation.prompt_builder import PromptBuilder
 from app.services.rule_generation.prompt_template import TEMPLATE
 from app.services.rule_generation.rule_builder import RuleBuilder
+from app.services.graph.graph_validator import GraphValidator
 
 router = APIRouter(prefix="/cross-field-validation", tags=["cross-field-validation"])
 
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 PROMPT_BUILDER = PromptBuilder(TEMPLATE)
 RULE_BUILDER = RuleBuilder()
 GRAPH_BUILDER = GraphBuilder()
+GRAPH_VALIDATOR = GraphValidator()
 
 
 @lru_cache(maxsize=1)
@@ -73,5 +75,6 @@ async def cross_field_validation(
         logger.info("Graph for genome type %s built successfully", genome_type)
 
     logger.info("Traversing graph...")
-    # TODO: traverse graph with data and return erros (schemas/genome_error.py)
-    return None  # TODO: return actual response
+    errors = GRAPH_VALIDATOR.validate(request.properties, graph)
+
+    return ValidationResponse(errors=errors)

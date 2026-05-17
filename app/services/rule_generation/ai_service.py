@@ -5,30 +5,41 @@ import logging
 import os
 
 from google import genai
-from google.genai import types
 
 
 logger = logging.getLogger(__name__)
 
 
 class AIServiceError(Exception):
-    """Raised when AI service fails."""
+    """Exception raised when AI service operations fail."""
 
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         original_error: Exception | None = None
-    ):
+        ):
+        """Initialize AIServiceError.
+
+        Args:
+            message: Error message
+            original_error: The original exception that caused this error
+        """
         super().__init__(message)
         self.original_error = original_error
 
 
 class AIService:
-    """
-    Service communicating w api
-    """
+    """Service for communicating with Google Gemini API."""
 
     def __init__(self, api_key: str):
+        """Initialize AIService with API key.
+
+        Args:
+            api_key: Google Gemini API key
+
+        Raises:
+            AIServiceError: If API key is invalid or initialization fails
+        """
         if not api_key or not isinstance(api_key, str):
             raise AIServiceError(
                 "Invalid API key provided to AIService"
@@ -39,7 +50,7 @@ class AIService:
             raise AIServiceError(
                 "GEMINI_MODEL environment variable is not set"
             )
-    
+
         try:
             self.client = genai.Client(api_key=api_key)
         except Exception as error:
@@ -48,13 +59,21 @@ class AIService:
             raise AIServiceError(error_msg, original_error=error) from error
 
     def generate_rules(self, prompt: str) -> str:
-        """
-        Send prompt to api get json response.
+        """Send prompt to Gemini API and get JSON response.
+
+        Args:
+            prompt: The prompt to send to the API
+
+        Returns:
+            JSON string containing generated rules
+
+        Raises:
+            AIServiceError: If API call fails or response is invalid
         """
         try:
             response = self.client.models.generate_content(
                 model=self.api_model,
-                contents=types.Part.from_text(prompt)
+                contents=prompt
             )
 
             if not response.text:
@@ -73,12 +92,19 @@ class AIService:
             logger.error(error_msg)
             raise AIServiceError(error_msg, original_error=error) from error
 
-    
-    def _extract_json(self, text: str) -> str:
-        """
-        Extract JSON array from Gemini response.
-        """
 
+    def _extract_json(self, text: str) -> str:
+        """Extract JSON array from Gemini response.
+
+        Args:
+            text: The response text from the API
+
+        Returns:
+            Extracted JSON string
+
+        Raises:
+            AIServiceError: If no valid JSON array is found
+        """
         if not text:
             raise AIServiceError(
                 "Empty response from Gemini"
@@ -110,12 +136,19 @@ class AIService:
             )
 
         return text[start : end + 1]
-    
+
     def _validate_json_response(
         self,
         response_text: str,
     ) -> None:
-        
+        """Validate that response is a valid JSON array.
+
+        Args:
+            response_text: The JSON string to validate
+
+        Raises:
+            AIServiceError: If JSON is invalid or not an array
+        """
         try:
             parsed = json.loads(response_text)
 
@@ -129,3 +162,4 @@ class AIService:
                 f"Invalid JSON after extraction: {str(error)}",
                 original_error=error,
             ) from error
+

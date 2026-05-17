@@ -1,3 +1,4 @@
+"""Service for building prompts for AI rule generation."""
 from __future__ import annotations
 
 import logging
@@ -13,6 +14,7 @@ class PromptBuilderError(Exception):
         self.original_error = original_error
 
 class PromptBuilder:
+    """Builds prompts for AI-based rule generation."""
     def __init__(self, template: str):
         if not template:
             raise PromptBuilderError("Prompt template cannot be empty")
@@ -22,16 +24,15 @@ class PromptBuilder:
         try:
             if not attributes:
                 raise ValueError("Attributes list cannot be empty")
-            
+
             if not all(isinstance(attr, str) for attr in attributes):
                 raise TypeError("All attributes must be strings")
-            
+
             attributes_str = "\n".join(f"- {item}" for item in attributes)
             prompt = self.template.format(attributes=attributes_str)
             return prompt
-                
+
         except Exception as e:
             error_msg = f"Invalid prompt builder input: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise PromptBuilderError(error_msg, original_error=e) from e
-    
