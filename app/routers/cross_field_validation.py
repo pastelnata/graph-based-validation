@@ -50,9 +50,7 @@ def get_ai_service() -> AIService:
 async def cross_field_validation(
     request: ValidationRequest,
 ) -> ValidationResponse:
-    """
-    Endpoint for cross-field validation.
-    """
+    """Endpoint for cross-field validation."""
     if not request.properties or len(request.properties) < 1:
         logger.warning("Validation request received with insufficient properties")
         raise HTTPException(

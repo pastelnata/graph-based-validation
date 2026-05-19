@@ -27,15 +27,7 @@ class GraphValidator:
         properties: list[GenomeProperty],
         graph: Graph,
     ) -> list[GenomeError]:
-        """Validate properties against the rule graph.
-
-        Args:
-            properties: List of GenomeProperty objects to validate
-            graph: The rule graph containing validation rules
-
-        Returns:
-            List of GenomeError objects for any validation failures
-        """
+        """Validate properties against the rule graph."""
         self.property_map = {}
         self.errors = []
 
@@ -53,11 +45,7 @@ class GraphValidator:
         return self.errors
 
     def _build_property_map(self, properties: list[GenomeProperty]) -> None:
-        """Build a map of property names to their values for quick lookup.
-
-        Args:
-            properties: List of GenomeProperty objects
-        """
+        """Build a map of property names to their values for quick lookup."""
         for prop in properties:
             self.property_map[prop.name] = {
                 "value": prop.value,
@@ -68,14 +56,7 @@ class GraphValidator:
             }
 
     def _traverse_and_validate(self, graph_obj: nx.DiGraph) -> None:
-        """Traverse the graph and validate rules.
-
-        Uses topological sort when possible (acyclic graphs) or node-by-node
-        validation for graphs with cycles.
-
-        Args:
-            graph_obj: The NetworkX directed graph containing validation rules
-        """
+        """Traverse the graph and validate rules."""
         try:
             list(nx.topological_sort(graph_obj))
             logger.debug("Using topological sort for graph traversal")
@@ -88,13 +69,7 @@ class GraphValidator:
                 self._validate_rule(source, target, rule_details)
 
     def _validate_rule(self, source: str, target: str, rule_details: dict) -> None:
-        """Validate a single rule.
-
-        Args:
-            source: Source node name
-            target: Target node name
-            rule_details: Dictionary containing constraint, condition, and message
-        """
+        """Validate a single rule."""
         condition = rule_details.get("condition")
         if condition is not None:
             if not self._evaluate_condition(condition):
@@ -114,14 +89,7 @@ class GraphValidator:
                 logger.debug("Validation failed: %s", error.message)
 
     def _evaluate_condition(self, condition: str) -> bool:
-        """Evaluate a condition string.
-
-        Args:
-            condition: The condition string to evaluate
-
-        Returns:
-            True if condition is met, False otherwise
-        """
+        """Evaluate a condition string."""
         try:
             return self._evaluate_expression(condition)
         except ValueError as e:
@@ -129,14 +97,7 @@ class GraphValidator:
             return True
 
     def _evaluate_constraint(self, constraint: str) -> bool:
-        """Evaluate a constraint string.
-
-        Args:
-            constraint: The constraint string to evaluate
-
-        Returns:
-            True if constraint is satisfied, False otherwise
-        """
+        """Evaluate a constraint string."""
         try:
             return self._evaluate_expression(constraint)
         except ValueError as e:
@@ -144,14 +105,7 @@ class GraphValidator:
             return True
 
     def _evaluate_expression(self, expression: str) -> bool:
-        """Evaluate a boolean expression with property substitution.
-
-        Args:
-            expression: The expression to evaluate
-
-        Returns:
-            Boolean result of the expression
-        """
+        """Evaluate a boolean expression with property substitution."""
         eval_expr = expression
         for prop_name, prop_data in self.property_map.items():
             value = prop_data["value"]
@@ -179,16 +133,7 @@ class GraphValidator:
     def _create_error(
         self, target: str, rule_details: dict, constraint: str
     ) -> GenomeError:
-        """Create a GenomeError object for a validation failure.
-
-        Args:
-            target: The target property that failed validation
-            rule_details: Dictionary containing constraint and message
-            constraint: The constraint that failed
-
-        Returns:
-            GenomeError object
-        """
+        """Create a GenomeError object for a validation failure."""
         target_property = self.property_map.get(target, {}).get("original_property")
 
         if target_property is None:

@@ -42,18 +42,7 @@ class GraphBuilder:
     GRAPH_OUTPUT_DIR = Path(__file__).resolve().parents[2] / "resources" / "graphs"
 
     def build_graph(self, rules: list[Rule], genome_type: str) -> Graph:
-        """Build a directed graph from validation rules.
-
-        Args:
-            rules: List of Rule objects defining the graph structure
-            genome_type: Type of genome for categorizing the graph
-
-        Returns:
-            Graph object containing the built networkx DiGraph
-
-        Raises:
-            GraphBuildError: If graph construction fails
-        """
+        """Build a directed graph from validation rules."""
         try:
             graph = nx.DiGraph()
 
@@ -82,14 +71,7 @@ class GraphBuilder:
 
 
     def create_nodes(self, rules: list[Rule]) -> list[str]:
-        """Create list of unique nodes from rules.
-
-        Args:
-            rules: List of Rule objects
-
-        Returns:
-            Sorted list of unique node names
-        """
+        """Create list of unique nodes from rules."""
         attribute_names = set()
         for rule in rules:
             attribute_names.add(rule.source)
@@ -98,15 +80,7 @@ class GraphBuilder:
 
 
     def detect_cycles(self, graph: nx.DiGraph, rules: list[Rule]) -> list[CycleInfo]:
-        """Detect cycles in the graph.
-
-        Args:
-            graph: The networkx DiGraph to check
-            rules: List of Rule objects for cycle analysis
-
-        Returns:
-            List of CycleInfo objects describing detected cycles
-        """
+        """Detect cycles in the graph."""
         all_cycles = list(nx.recursive_simple_cycles(graph))
         return [
             CycleInfo(
@@ -118,15 +92,7 @@ class GraphBuilder:
 
 
     def find_rules_for_cycle(self, cycle: list[str], rules: list[Rule]) -> list[Rule]:
-        """Find all rules involved in a cycle.
-
-        Args:
-            cycle: List of nodes forming a cycle
-            rules: List of all Rule objects
-
-        Returns:
-            List of Rule objects that are part of the cycle
-        """
+        """Find all rules involved in a cycle."""
         cycle_rules = []
         for i, source in enumerate(cycle):
             target = cycle[(i + 1) % len(cycle)]
@@ -137,14 +103,7 @@ class GraphBuilder:
 
 
     def save_graph(self, graph: Graph):
-        """Save graph to JSON file.
-
-        Args:
-            graph: Graph object to save
-
-        Raises:
-            GraphSaveError: If saving fails
-        """
+        """Save graph to JSON file."""
         try:
             graph_json = {
                 "genome_type": graph.genome_type,
@@ -165,17 +124,7 @@ class GraphBuilder:
 
 
     def load_graph(self, genome_type: str) -> Optional[Graph]:
-        """Load graph from JSON file.
-
-        Args:
-            genome_type: Type of genome to load
-
-        Returns:
-            Graph object if found, None otherwise
-
-        Raises:
-            GraphLoadError: If loading fails
-        """
+        """Load graph from JSON file."""
         input_path = self.GRAPH_OUTPUT_DIR / f"{genome_type}.json"
 
         if not input_path.exists():
