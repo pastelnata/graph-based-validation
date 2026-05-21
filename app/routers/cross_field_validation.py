@@ -9,11 +9,11 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.validation_request import ValidationRequest
 from app.schemas.validation_response import ValidationResponse
 from app.services.graph.graph_builder import GraphBuilder
+from app.services.graph.graph_validator import GraphValidator
 from app.services.rule_generation.ai_service import AIService, AIServiceError
 from app.services.rule_generation.prompt_builder import PromptBuilder
 from app.services.rule_generation.prompt_template import TEMPLATE
 from app.services.rule_generation.rule_builder import RuleBuilder
-from app.services.graph.graph_validator import GraphValidator
 
 router = APIRouter(prefix="/cross-field-validation", tags=["cross-field-validation"])
 
@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 PROMPT_BUILDER = PromptBuilder(TEMPLATE)
 RULE_BUILDER = RuleBuilder()
 GRAPH_BUILDER = GraphBuilder()
-GRAPH_VALIDATOR = GraphValidator()
 
 
 @lru_cache(maxsize=1)
@@ -73,6 +72,8 @@ async def cross_field_validation(
         logger.info("Graph for genome type %s built successfully", genome_type)
 
     logger.info("Traversing graph...")
-    errors = GRAPH_VALIDATOR.validate(request.properties, graph)
+    # Instantiate per request to guarantee no state can leak between requests.
+    validator = GraphValidator()
+    errors = validator.validate(request.properties, graph)
 
     return ValidationResponse(errors=errors)
