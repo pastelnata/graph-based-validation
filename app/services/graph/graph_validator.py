@@ -13,16 +13,20 @@ from app.schemas.graph import Graph
 
 logger = logging.getLogger(__name__)
 
+SAFE_BUILTINS: dict[str, Any] = {
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "pow": pow,
+    "round": round,
+    "len": len,
+    "int": int,
+    "float": float,
+}
 
 # pylint: disable=too-few-public-methods
 class GraphValidator:
-    """Validates genome properties against a rule graph.
-
-    This class is stateless: no per-request data is stored on the instance.
-    All state (property map, error list) lives in locals during validate()
-    and is passed explicitly to private helpers. A single instance can
-    therefore be reused safely across concurrent requests.
-    """
+    """Validates genome properties against a rule graph."""
 
     def validate(
         self,
@@ -72,7 +76,6 @@ class GraphValidator:
         else:
             logger.warning("Graph contains cycles. Using unordered edge traversal.")
 
-        # Validate all edges (rules) regardless of traversal order
         for source, target, data in graph_obj.edges(data=True):
             rule_details = data.get("rule_details")
             if rule_details:
@@ -88,7 +91,7 @@ class GraphValidator:
     ) -> None:
         """Validate a single rule and append any error to `errors`."""
         condition = rule_details.get("condition")
-        if condition is not None and not self._evaluate_condition(condition, property_map):
+        if condition is not None and not self._evaluate(condition, property_map, kind="condition"):
             logger.debug(
                 "Rule condition not met for %s -> %s. Condition: %s",
                 source,
@@ -98,33 +101,24 @@ class GraphValidator:
             return
 
         constraint = rule_details.get("constraint")
-        if constraint is not None and not self._evaluate_constraint(constraint, property_map):
+        if constraint is not None and not self._evaluate(constraint, property_map, kind="constraint"):
             error = self._create_error(target, rule_details, constraint, property_map)
             errors.append(error)
             logger.debug("Validation failed: %s", error.message)
 
-    def _evaluate_condition(
+    def _evaluate(
         self,
-        condition: str,
+        expression: str,
         property_map: dict[str, dict[str, Any]],
+        kind: str = "expression",
     ) -> bool:
-        """Evaluate a condition string. Returns True (rule applies) on failure."""
+        """Evaluate an expression. Used for both rule conditions and constraints."""
         try:
-            return self._evaluate_expression(condition, property_map)
+            return GraphValidator._evaluate_expression(expression, property_map)
         except ValueError as exc:
-            logger.warning("Failed to evaluate condition '%s': %s", condition, exc)
-            return True
-
-    def _evaluate_constraint(
-        self,
-        constraint: str,
-        property_map: dict[str, dict[str, Any]],
-    ) -> bool:
-        """Evaluate a constraint string. Returns True (passes) on failure."""
-        try:
-            return self._evaluate_expression(constraint, property_map)
-        except ValueError as exc:
-            logger.warning("Failed to evaluate constraint '%s': %s", constraint, exc)
+            logger.warning(
+                "Failed to evaluate %s '%s': %s", kind, expression, exc
+            )
             return True
 
     @staticmethod
@@ -134,8 +128,7 @@ class GraphValidator:
     ) -> bool:
         """Evaluate a boolean expression with property substitution."""
         eval_expr = expression
-        # Replace longer names first so that e.g. "gc_content" isn't
-        # corrupted by an earlier replacement of "gc".
+
         for prop_name in sorted(property_map.keys(), key=len, reverse=True):
             value = property_map[prop_name]["value"]
 
@@ -155,9 +148,7 @@ class GraphValidator:
         eval_expr = eval_expr.replace(" null", " None").replace("null", "None")
 
         try:
-            # Use eval() for dynamic constraint evaluation - security ensured by
-            # restricting builtins and validating expressions beforehand.
-            result = eval(eval_expr, {"__builtins__": {}}, {})  # pylint: disable=eval-used
+            result = eval(eval_expr, {"__builtins__": {}, **SAFE_BUILTINS})  # pylint: disable=eval-used
             return bool(result)
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("Evaluation failed for: %s. Error: %s", eval_expr, exc)

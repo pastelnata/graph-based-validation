@@ -101,6 +101,17 @@ class TestGraphValidatorConstraints:
 
         assert errors == []
 
+    def test_constraint_using_abs(self):
+        validator = GraphValidator()
+        graph = _make_graph([
+            ("min_v", "max_v", {"constraint": "abs(max_v - min_v) < 50"}),
+        ])
+        errors = validator.validate(
+            [_prop("min_v", "100"), _prop("max_v", "120")], graph,
+        )
+        assert errors == []
+
+
 
 class TestGraphValidatorConditions:
     """Conditions gate whether a rule's constraint is even checked."""
