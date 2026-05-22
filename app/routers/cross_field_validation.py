@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.validation_request import ValidationRequest
 from app.schemas.validation_response import ValidationResponse
 from app.services.graph.graph_builder import GraphBuilder
+from app.services.graph.graph_validator import GraphValidator
 from app.services.rule_generation.ai_service import AIService, AIServiceError
 from app.services.rule_generation.prompt_builder import PromptBuilder
 from app.services.rule_generation.prompt_template import TEMPLATE
@@ -48,9 +49,7 @@ def get_ai_service() -> AIService:
 async def cross_field_validation(
     request: ValidationRequest,
 ) -> ValidationResponse:
-    """
-    Endpoint for cross-field validation.
-    """
+    """Endpoint for cross-field validation."""
     if not request.properties or len(request.properties) < 1:
         logger.warning("Validation request received with insufficient properties")
         raise HTTPException(
@@ -73,5 +72,8 @@ async def cross_field_validation(
         logger.info("Graph for genome type %s built successfully", genome_type)
 
     logger.info("Traversing graph...")
-    # TODO: traverse graph with data and return erros (schemas/genome_error.py)
-    return None  # TODO: return actual response
+    # Instantiate per request to guarantee no state can leak between requests.
+    validator = GraphValidator()
+    errors = validator.validate(request.properties, graph)
+
+    return ValidationResponse(errors=errors)
