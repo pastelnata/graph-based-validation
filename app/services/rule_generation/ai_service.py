@@ -56,8 +56,7 @@ class AIService:
 
             if not response.text:
                 raise AIServiceError("Gemini API returned empty response")
-
-
+            
             clean_json = self._extract_json(response.text)
             self._validate_json_response(clean_json)
 
@@ -79,7 +78,7 @@ class AIService:
             )
 
         text = text.strip()
-
+        
         if text.startswith("```json"):
             text = (
                 text.removeprefix("```json")
@@ -99,11 +98,18 @@ class AIService:
 
         if start == -1 or end == -1:
             raise AIServiceError(
-                f"No JSON array found in response: "
-                f"{text[:300]}"
+                f"No JSON array found in response. Response starts with: {text[:100]}"
             )
 
-        return text[start : end + 1]
+        json_str = text[start : end + 1]
+        try:
+            json.loads(json_str)
+            return json_str
+        except json.JSONDecodeError as e:
+            logger.error("Invalid JSON extracted: %s", json_str[:500])
+            raise AIServiceError(
+                f"Extracted text is not valid JSON: {str(e)}"
+            ) from e
 
     def _validate_json_response(
         self,
