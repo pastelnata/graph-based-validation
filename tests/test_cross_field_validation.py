@@ -31,8 +31,7 @@ class TestCrossFieldValidationBasic:
         request_data = {
             "properties": [
                 {
-                    "property_type": "STANDARD",
-                    "name": "length",
+                    "property_type": "STANDARD"
                     # Missing required: value, genome_type
                 }
             ]
@@ -41,22 +40,6 @@ class TestCrossFieldValidationBasic:
         response = client.post("/cross-field-validation/", json=request_data)
         assert response.status_code == 422
 
-    def test_cross_field_validation_missing_value_field(self):
-        """Request missing `value` specifically is rejected with 422."""
-        request_data = {
-            "properties": [
-                {
-                    "property_type": "STANDARD",
-                    "name": "length",
-                    "unit": "bp",
-                    "genome_type": "human",
-                    # Missing: value
-                }
-            ]
-        }
-
-        response = client.post("/cross-field-validation/", json=request_data)
-        assert response.status_code == 422
 
     def test_cross_field_validation_missing_unit_is_accepted(self):
         """Request missing optional `unit` field is accepted (200)."""

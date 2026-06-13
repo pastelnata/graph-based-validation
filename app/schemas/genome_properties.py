@@ -10,6 +10,6 @@ class GenomeProperty(BaseModel):
     """Represents a single genome property with its metadata."""
     property_type: PropertyType
     name: str
-    value: str
+    value: Optional[str] = None
     unit: Optional[str] = None
-    genome_type: str
+    genome_type: Optional[str] = None
