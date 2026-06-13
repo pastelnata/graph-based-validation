@@ -5,6 +5,8 @@ import os
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from app.schemas.graph import Graph
 from app.schemas.validation_request import ValidationRequest
 from app.schemas.validation_response import ValidationResponse
 from app.services.graph.graph_builder import GraphBuilder
@@ -13,6 +15,7 @@ from app.services.rule_generation.ai_service import AIService, AIServiceError
 from app.services.rule_generation.prompt_builder import PromptBuilder
 from app.services.rule_generation.prompt_template import TEMPLATE
 from app.services.rule_generation.rule_builder import RuleBuilder, RuleBuilderError
+from app.services.graph.generate_graph_image import generate_graph_image
 
 
 router = APIRouter(prefix="/cross-field-validation", tags=["cross-field-validation"])
@@ -61,7 +64,6 @@ async def cross_field_validation(
 
     logger.info("Loading graph for genome type: %s.", genome_type)
     graph = GRAPH_BUILDER.load_graph(genome_type=genome_type)
-
     logger.info("Generating graph for %s.", genome_type)
 
     if graph is None:
@@ -92,3 +94,16 @@ async def cross_field_validation(
     errors = validator.validate(request.properties, graph)
 
     return ValidationResponse(errors=errors)
+
+@router.post("/graph-image", response_class=FileResponse)
+def graph_image(request: Graph):
+    """Endpoint for creating a graph image."""
+    try:
+        file_path = generate_graph_image(request)  # drop await if not async
+        return FileResponse(file_path, media_type="image/png")
+    except Exception as error:
+        logger.exception("Failed to generate graph image")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while generating the graph image."
+        ) from error
