@@ -5,7 +5,6 @@ import os
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
-
 from app.schemas.validation_request import ValidationRequest
 from app.schemas.validation_response import ValidationResponse
 from app.services.graph.graph_builder import GraphBuilder
@@ -13,7 +12,8 @@ from app.services.graph.graph_validator import GraphValidator
 from app.services.rule_generation.ai_service import AIService, AIServiceError
 from app.services.rule_generation.prompt_builder import PromptBuilder
 from app.services.rule_generation.prompt_template import TEMPLATE
-from app.services.rule_generation.rule_builder import RuleBuilder
+from app.services.rule_generation.rule_builder import RuleBuilder, RuleBuilderError
+
 
 router = APIRouter(prefix="/cross-field-validation", tags=["cross-field-validation"])
 
@@ -58,21 +58,36 @@ async def cross_field_validation(
         )
 
     genome_type = request.properties[0].genome_type
-    logger.info("Loading graph for genome type: %s.", genome_type)
 
+    logger.info("Loading graph for genome type: %s.", genome_type)
     graph = GRAPH_BUILDER.load_graph(genome_type=genome_type)
 
+    logger.info("Generating graph for %s.", genome_type)
+
     if graph is None:
-        property_names = [prop.name for prop in request.properties]
-        prompt = PROMPT_BUILDER.build_prompt(property_names)
-        ai_service = get_ai_service()
-        ai_response = ai_service.generate_rules(prompt)
-        rules = RULE_BUILDER.parse_rules(ai_response)
-        graph = GRAPH_BUILDER.build_graph(rules, genome_type)
-        logger.info("Graph for genome type %s built successfully", genome_type)
+        try:
+            property_names = [prop.name for prop in request.properties]
+            prompt = PROMPT_BUILDER.build_prompt(property_names)
+            ai_service = get_ai_service()
+            ai_response = ai_service.generate_rules(prompt)
+            rules = RULE_BUILDER.parse_rules(ai_response)
+            graph = GRAPH_BUILDER.build_graph(rules, genome_type)
+            logger.info("Graph for genome type %s built successfully", genome_type)
+        except (AIServiceError, RuleBuilderError) as error:
+            logger.error(
+                "Failed to generate graph for genome type %s: %s",
+                genome_type,
+                error
+            )
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Rule generation temporarily unavailable. "
+                    "Please retry shortly."
+                )
+            ) from error
 
     logger.info("Traversing graph...")
-    # Instantiate per request to guarantee no state can leak between requests.
     validator = GraphValidator()
     errors = validator.validate(request.properties, graph)
 

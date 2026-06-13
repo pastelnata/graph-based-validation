@@ -5,7 +5,8 @@ import logging
 import os
 
 from google import genai
-
+from google.genai.errors import APIError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +47,33 @@ class AIService:
             logger.error(error_msg)
             raise AIServiceError(error_msg, original_error=error) from error
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, max=10),
+        retry=retry_if_exception_type((APIError, TimeoutError)),
+        reraise=True,
+    )
     def generate_rules(self, prompt: str) -> str:
         """Send prompt to Gemini API and get JSON response."""
         try:
             response = self.client.models.generate_content(
                 model=self.api_model,
-                contents=prompt
+                contents=prompt,
+                config={
+                    "max_output_tokens": 8192,
+                    "response_mime_type": "application/json"
+                }
             )
 
             if not response.text:
                 raise AIServiceError("Gemini API returned empty response")
+            
+            candidate = response.candidates[0] if response.candidates else None
+            if candidate and candidate.finish_reason == "MAX_TOKENS":
+                raise AIServiceError(
+                    "Gemini response was truncated (hit max_output_tokens). "
+                    "Consider reducing prompt size or splitting the request."
+                )
             
             clean_json = self._extract_json(response.text)
             self._validate_json_response(clean_json)
