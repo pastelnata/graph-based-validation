@@ -53,7 +53,7 @@ A graph-based validation system that retrieves attributes and uses LLM assistanc
 4. Start the FastAPI development server:
 
    ```
-   fastapi dev
+   uvicorn app.main:app --reload --reload-dir app
    ```
 
    The development server will launch at http://127.0.0.1:8000
