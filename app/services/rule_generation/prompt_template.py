@@ -17,7 +17,8 @@ Focus especially on:
 8. Output values constrained by input values
 9. Product-type dependent behavior
 
-Only generate rules that express REAL dependency logic between attributes.
+Only generate rules that express REAL dependency logic between attributes. Generate a maximum of 40 rules. Prioritise the most critical and unambiguous dependencies only.
+
 DON'T generate:
 - single-field validation rules
 - trivial positivity checks (e.g. FIELD > 0)

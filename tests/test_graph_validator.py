@@ -7,7 +7,6 @@ from app.schemas.genome_properties import GenomeProperty
 from app.schemas.graph import Graph, CycleInfo
 from app.services.graph.graph_validator import GraphValidator
 
-
 def _make_graph(edges, cycles=None, genome_type: str = "test") -> Graph:
     """Build a Graph wrapper around a DiGraph with the given edges.
 

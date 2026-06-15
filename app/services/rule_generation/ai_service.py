@@ -64,6 +64,7 @@ class AIService:
                     "response_mime_type": "application/json"
                 }
             )
+            logger.info(response)
 
             if not response.text:
                 raise AIServiceError("Gemini API returned empty response")

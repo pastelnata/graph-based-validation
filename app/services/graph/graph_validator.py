@@ -72,14 +72,17 @@ class GraphValidator:
     ) -> None:
         """Traverse the graph and validate rules."""
         if nx.is_directed_acyclic_graph(graph_obj):
-            logger.debug("Graph is acyclic; topological sort available for traversal.")
+            logger.debug("Graph is acyclic; using topological sort for traversal.")
+            nodes = nx.topological_sort(graph_obj)
         else:
             logger.warning("Graph contains cycles. Using unordered edge traversal.")
-
-        for source, target, data in graph_obj.edges(data=True):
-            rule_details = data.get("rule_details")
-            if rule_details:
-                self._validate_rule(source, target, rule_details, property_map, errors)
+            nodes = graph_obj.nodes()
+            
+        for node in nodes:
+            for _, target, data in graph_obj.out_edges(node, data=True):
+                rule_details = data.get("rule_details")
+                if rule_details:
+                    self._validate_rule(node, target, rule_details, property_map, errors)
 
     def _validate_rule(
         self,
